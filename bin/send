@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)/../
+source .envrc
+delay="$2"
+
+case "$1" in
+    -h|--http )
+        ./yii atm/default/http ${delay}
+    ;;
+    -q|--queue )
+        ./yii atm/default/queue ${delay}
+    ;;
+    * )
+        echo "Usage: send <option> [delay]"
+        echo "  -h, --http    Sends HTTP requests in the loop"
+        echo "  -q, --queue   Sends AMQP messages in the loop"
+        echo "  delay         Delay in seconds between loop iterations"
+    ;;
+esac

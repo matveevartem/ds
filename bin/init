@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)
+./install --fs
+
+./install --composer
+
+cd ../
+php ./composer.phar install
+
+cd bin
+./install --db

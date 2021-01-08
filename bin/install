@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)
+
+case "$1" in
+ -e|--env )
+    ip=$(ifconfig $(route -v | grep default | awk '{print $8}') | grep -E " [0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} " | awk '{print $2}')
+    RED='\033[0;36m'
+    NC='\033[0m' # No Color
+    msg=$(echo -e "Enter your IP (leave blank for default value) [${RED}${ip}${NC}]: ")
+    res=0
+    while [ "${res}" != "${in}" ]
+    do
+        read -p "${msg}" in;
+        in=${in:-${ip}};
+        res=$(echo ${in} | grep -E '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$');
+    done
+    ip=${in}
+    sed 's/{{API_HOST}}/'${ip}'/' .envrc > ../.envrc
+ ;;
+ -f|--fs )
+    chmod 777 ../runtime && 
+    echo "Changed mode to 777 for runtime";
+    chmod 777 ../web/assets &&
+    echo "Changed mode to 777 for web/assets";
+ ;;
+ -d|--db )
+    for file in `find ../ -type f -name "database.db"`
+    do
+       rm -f ${file};
+       echo "Removed" ${file}
+    done
+    echo ""
+    for dir in `find ../ -type d -name "migrations" -not -path "../vendor/*"`
+    do
+        echo yes | ../yii migrate --migrationPath=${dir};
+    done
+    echo ""
+    for file in `find ../ -type f -name "database.db"`
+    do
+       chmod 777 ${file%/*} &&
+       echo "Changed mode to 777 for" ${file%/*};
+       chmod 666 ${file} &&
+       echo "Changed mode to 666 for" ${file};
+       chown www-data:www-data ${file} &&
+       echo "Changed owner to www-data for" ${file};
+       chown -R www-data:www-data ${file%/*} && 
+       echo "Changed owner to www-data for" ${file%/*};
+    done
+ ;;
+ -c|--composer )
+    php -r "copy('https://getcomposer.org/installer', './composer-setup.php');"
+    php -r "if (hash_file('sha384', './composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('./composer-setup.php'); } echo PHP_EOL;"
+    php ./composer-setup.php --install-dir=../
+    php -r "unlink('./composer-setup.php');"
+ ;;
+
+ * )
+    echo "Usage: install <option>"
+    echo "  -c, --composer   install composer.phar"
+    echo "  -d, --db         create empty databases"
+    echo "  -f, --fs         creates permissions for work directories"
+    echo "  -e, --env        creates .envrc file"
+    echo ""
+ ;;
+esac

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+cd $(dirname $0)/../
+
+if [ -z "$(find . -maxdepth 1 -name ".envrc" -type f)" ]
+then
+    ./bin/install --env
+fi
+
+source .envrc
+docker-compose up --build
+docker-compose down
